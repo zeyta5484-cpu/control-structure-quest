@@ -3,7 +3,7 @@
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control Structure Quest</title>
+  <title>LogicHelper</title>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -44,7 +44,7 @@
   <div id="app" class="w-full h-full overflow-auto"></div>
   <script>
     const defaultConfig = {
-      game_title: "Control Structure Quest",
+      game_title: "LogicHelper",
       instructions_header: "How to Play",
       win_message: "Congratulations! You've mastered control structures!",
       background_color: "#1e293b",
@@ -133,6 +133,8 @@
       startTime: null,
       endTime: null
     };
+    
+    let timerInterval = null;
 
     function render() {
       const config = window.elementSdk?.config || defaultConfig;
@@ -162,15 +164,15 @@
                 <p style="font-size: ${baseSize}px; line-height: 1.6; margin-bottom: ${baseSize}px;">
                   🎯 <strong>Objective:</strong> Navigate through 7 stations to identify the correct control structure for each problem!
                 </p>
-                <p style="font-size: ${baseSize}px; line-height: 1.6; margin-bottom: ${baseSize}px;">
+                <p style="font-size: ${baseSize}px; line-height: 1.6; margin-bottom: ${baseSize * 0.5}px;">
                   🎲 <strong>How to Play:</strong>
                 </p>
-                <ul style="font-size: ${baseSize * 0.9}px; line-height: 1.8; margin-left: ${baseSize * 1.5}px; margin-bottom: ${baseSize}px;">
-                  <li>Draw a problem card and answer YES/NO questions at each station</li>
-                  <li>Follow the path based on your answers</li>
-                  <li>Select the correct control structure and method when you reach an answer station</li>
-                  <li>Earn points for correct answers (wrong answers cost you points!)</li>
-                  <li>First to solve 10 problems correctly wins!</li>
+                <ul style="font-size: ${baseSize * 0.9}px; line-height: 1.8; margin-left: ${baseSize * 1.5}px; margin-bottom: ${baseSize}px; list-style-type: disc;">
+                  <li style="margin-bottom: ${baseSize * 0.3}px;">Draw a problem card and answer YES/NO questions at each station</li>
+                  <li style="margin-bottom: ${baseSize * 0.3}px;">Follow the path based on your answers</li>
+                  <li style="margin-bottom: ${baseSize * 0.3}px;">Select the correct control structure and method when you reach an answer station</li>
+                  <li style="margin-bottom: ${baseSize * 0.3}px;">Earn points for correct answers (wrong answers cost you points!)</li>
+                  <li style="margin-bottom: ${baseSize * 0.3}px;">First to solve 10 problems correctly wins!</li>
                 </ul>
                 <p style="font-size: ${baseSize * 0.85}px; line-height: 1.6; color: ${secondaryColor};">
                   💡 <strong>Tip:</strong> Think carefully about each question before making your choice!
@@ -195,6 +197,7 @@
         document.getElementById('start-btn').onclick = () => {
           gameState.showInstructions = false;
           gameState.startTime = Date.now();
+          startTimer();
           startNewProblem();
         };
       } else if (gameState.gameWon) {
@@ -203,11 +206,29 @@
         const seconds = timeTaken % 60;
         const timeDisplay = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
         
+        let winMessage = "";
+        let winEmoji = "";
+        let winColor = "";
+        
+        if (gameState.score >= 80 && timeTaken < 180) {
+          winMessage = "Congrats, you have MASTER control structure";
+          winEmoji = "🏆";
+          winColor = "#10b981";
+        } else if (gameState.score >= 60 && timeTaken < 180) {
+          winMessage = "Good effort. Do better next time";
+          winEmoji = "👍";
+          winColor = "#f59e0b";
+        } else {
+          winMessage = "Don't give up. Need improvement.";
+          winEmoji = "💪";
+          winColor = "#ef4444";
+        }
+        
         app.innerHTML = `
           <div style="max-width: 800px; margin: 0 auto; padding: ${baseSize * 2}px; text-align: center;">
             <div style="background: ${surfaceColor}; border-radius: 16px; padding: ${baseSize * 3}px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
-              <div style="font-size: ${baseSize * 4}px; margin-bottom: ${baseSize}px;">🏆</div>
-              <h1 style="font-size: ${baseSize * 2.5}px; font-weight: 800; margin-bottom: ${baseSize}px; color: ${primaryColor};">${config.win_message || defaultConfig.win_message}</h1>
+              <div style="font-size: ${baseSize * 4}px; margin-bottom: ${baseSize}px;">${winEmoji}</div>
+              <h1 style="font-size: ${baseSize * 2.5}px; font-weight: 800; margin-bottom: ${baseSize}px; color: ${winColor};">${winMessage}</h1>
               <p style="font-size: ${baseSize * 1.5}px; margin-bottom: ${baseSize}px; color: ${textColor};">Final Score: <strong>${gameState.score}</strong> points</p>
               <p style="font-size: ${baseSize * 1.3}px; margin-bottom: ${baseSize * 2}px; color: ${secondaryColor};">⏱️ Time Taken: <strong>${timeDisplay}</strong></p>
               <button id="restart-btn" style="background: ${primaryColor}; color: white; padding: ${baseSize}px ${baseSize * 2}px; border: none; border-radius: 12px; font-size: ${baseSize * 1.25}px; font-weight: 700; cursor: pointer;">
@@ -229,6 +250,7 @@
             startTime: Date.now(),
             endTime: null
           };
+          startTimer();
           startNewProblem();
         };
       } else {
@@ -250,35 +272,35 @@
       const currentStation = stations.find(s => s.step === gameState.currentStep);
       
       app.innerHTML = `
-        <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 1.5}px;">
-          <div style="background: ${surfaceColor}; border-radius: 16px; padding: ${baseSize * 1.5}px; margin-bottom: ${baseSize * 1.5}px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: ${baseSize}px;">
-              <h1 style="font-size: ${baseSize * 1.8}px; font-weight: 800; color: ${textColor}; margin: 0;">${config.game_title || defaultConfig.game_title}</h1>
-              <div style="display: flex; gap: ${baseSize * 1.5}px; font-size: ${baseSize * 0.95}px;">
-                <span style="background: ${primaryColor}; padding: ${baseSize * 0.5}px ${baseSize}px; border-radius: 8px; font-weight: 700;">📊 Score: ${gameState.score}</span>
-                <span style="background: ${secondaryColor}; padding: ${baseSize * 0.5}px ${baseSize}px; border-radius: 8px; font-weight: 700;">✅ Solved: ${gameState.problemsSolved}/10</span>
+        <div style="max-width: 1200px; margin: 0 auto; padding: ${baseSize * 0.8}px; display: flex; flex-direction: column; height: 100%;">
+          <div style="background: ${surfaceColor}; border-radius: 12px; padding: ${baseSize * 0.8}px; margin-bottom: ${baseSize * 0.6}px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: ${baseSize * 0.5}px;">
+              <h1 style="font-size: ${baseSize * 1.3}px; font-weight: 800; color: ${textColor}; margin: 0;">${config.game_title || defaultConfig.game_title}</h1>
+              <div style="display: flex; gap: ${baseSize * 0.8}px; font-size: ${baseSize * 0.75}px;">
+                <span style="background: ${primaryColor}; padding: ${baseSize * 0.4}px ${baseSize * 0.7}px; border-radius: 6px; font-weight: 700;">📊 ${gameState.score}</span>
+                <span style="background: ${secondaryColor}; padding: ${baseSize * 0.4}px ${baseSize * 0.7}px; border-radius: 6px; font-weight: 700;">✅ ${gameState.problemsSolved}/10</span>
+                <span id="timer-display" style="background: ${surfaceColor}; border: 2px solid ${primaryColor}; padding: ${baseSize * 0.4}px ${baseSize * 0.7}px; border-radius: 6px; font-weight: 700;">⏱️ 0:00</span>
               </div>
             </div>
           </div>
           
-          <div style="background: ${surfaceColor}; border-radius: 16px; padding: ${baseSize * 1.5}px; margin-bottom: ${baseSize * 1.5}px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
-            <h3 style="font-size: ${baseSize * 1.2}px; font-weight: 700; margin-bottom: ${baseSize}px; color: ${primaryColor};">🎯 Current Problem:</h3>
-            <p style="font-size: ${baseSize * 1.1}px; background: ${bgColor}; padding: ${baseSize}px; border-radius: 8px; color: ${textColor};">${gameState.currentProblem.text}</p>
+          <div style="background: ${surfaceColor}; border-radius: 12px; padding: ${baseSize * 0.8}px; margin-bottom: ${baseSize * 0.6}px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+            <h3 style="font-size: ${baseSize * 0.9}px; font-weight: 700; margin-bottom: ${baseSize * 0.5}px; color: ${primaryColor};">🎯 Problem:</h3>
+            <p style="font-size: ${baseSize * 1.1}px; background: ${bgColor}; padding: ${baseSize * 0.6}px; border-radius: 8px; color: ${textColor}; margin: 0;">${gameState.currentProblem.text}</p>
           </div>
           
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: ${baseSize}px; margin-bottom: ${baseSize * 1.5}px;">
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: ${baseSize * 0.4}px; margin-bottom: ${baseSize * 0.6}px;">
             ${stations.map(station => `
-              <div class="station ${station.step === gameState.currentStep ? 'active-station' : ''}" style="background: ${station.step === gameState.currentStep ? primaryColor : surfaceColor}; border: 3px solid ${station.step === gameState.currentStep ? secondaryColor : 'transparent'}; border-radius: 12px; padding: ${baseSize * 1.2}px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: ${station.step <= gameState.currentStep ? '1' : '0.5'};">
-                <div style="font-size: ${baseSize * 1.8}px; margin-bottom: ${baseSize * 0.5}px;">${station.step === gameState.currentStep ? '📍' : station.step < gameState.currentStep ? '✅' : '🔒'}</div>
-                <h4 style="font-size: ${baseSize * 0.85}px; font-weight: 700; margin-bottom: ${baseSize * 0.5}px; color: ${station.step === gameState.currentStep ? 'white' : primaryColor};">Step ${station.step}</h4>
-                <p style="font-size: ${baseSize * 0.75}px; color: ${station.step === gameState.currentStep ? 'white' : textColor}; line-height: 1.4;">${station.question}</p>
+              <div class="station ${station.step === gameState.currentStep ? 'active-station' : ''}" style="background: ${station.step === gameState.currentStep ? primaryColor : surfaceColor}; border: 2px solid ${station.step === gameState.currentStep ? secondaryColor : 'transparent'}; border-radius: 8px; padding: ${baseSize * 0.5}px ${baseSize * 0.3}px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); opacity: ${station.step <= gameState.currentStep ? '1' : '0.5'};">
+                <div style="font-size: ${baseSize * 1.2}px; margin-bottom: ${baseSize * 0.2}px;">${station.step === gameState.currentStep ? '📍' : station.step < gameState.currentStep ? '✅' : '🔒'}</div>
+                <h4 style="font-size: ${baseSize * 0.65}px; font-weight: 700; color: ${station.step === gameState.currentStep ? 'white' : primaryColor}; margin: 0;">${station.step}</h4>
               </div>
             `).join('')}
           </div>
           
-          <div style="background: ${surfaceColor}; border-radius: 16px; padding: ${baseSize * 2}px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);">
-            <h3 style="font-size: ${baseSize * 1.4}px; font-weight: 700; margin-bottom: ${baseSize * 1.2}px; color: ${textColor};">🎲 Station ${currentStation.step}: ${currentStation.question}</h3>
-            <div id="choices"></div>
+          <div style="background: ${surfaceColor}; border-radius: 12px; padding: ${baseSize}px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); flex: 1; display: flex; flex-direction: column;">
+            <h3 style="font-size: ${baseSize * 1.1}px; font-weight: 700; margin-bottom: ${baseSize * 0.8}px; color: ${textColor};">🎲 Station ${currentStation.step}: ${currentStation.question}</h3>
+            <div id="choices" style="flex: 1; display: flex; flex-direction: column; justify-content: center;"></div>
           </div>
         </div>
       `;
@@ -287,7 +309,7 @@
       
       if (currentStation.isAnswer) {
         choicesDiv.innerHTML = `
-          <p style="font-size: ${baseSize * 0.95}px; margin-bottom: ${baseSize * 1.2}px; color: ${textColor};">Select the correct control structure and method:</p>
+          <p style="font-size: ${baseSize * 0.95}px; margin-bottom: ${baseSize * 1.2}px; color: ${textColor};">Check your answer. Press Submit.</p>
           <button id="submit-answer" style="width: 100%; background: ${primaryColor}; color: white; padding: ${baseSize * 1.2}px; border: none; border-radius: 12px; font-size: ${baseSize * 1.1}px; font-weight: 700; cursor: pointer;">
             ✨ Submit Answer
           </button>
@@ -358,6 +380,7 @@
         if (gameState.problemsSolved >= 10) {
           gameState.endTime = Date.now();
           gameState.gameWon = true;
+          stopTimer();
           render();
         } else {
           showFeedback(true, () => startNewProblem());
@@ -409,6 +432,29 @@
       };
     }
 
+    function startTimer() {
+      timerInterval = setInterval(() => {
+        updateTimerDisplay();
+      }, 1000);
+    }
+    
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+    
+    function updateTimerDisplay() {
+      const timerElement = document.getElementById('timer-display');
+      if (timerElement && gameState.startTime) {
+        const elapsed = Math.floor((Date.now() - gameState.startTime) / 1000);
+        const minutes = Math.floor(elapsed / 60);
+        const seconds = elapsed % 60;
+        timerElement.textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+    }
+    
     function startNewProblem() {
       const availableProblems = problemCards.filter(p => !p.solved);
       if (availableProblems.length === 0) {
@@ -529,5 +575,5 @@
 
     render();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9ab3a62751e411c9',t:'MTc2NTI3NDM1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9aba217634c57e7f',t:'MTc2NTM0MjMyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
